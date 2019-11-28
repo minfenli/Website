@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script type="text/javascript" src="https://github.com/photonstorm/phaser/releases/download/v3.19.0/phaser.min.js"></script>
+    <title>Something about me.</title>
+</head>
+<body>
+    <div id='game'></div>
+</body>
+<script type="text/javascript">
+let game = new Phaser.Game({
+    type: Phaser.AUTO,
+    width: 800,
+    height:573,
+    scene: {
+      create: create,
+      preload: preload
+    }
+  });
+  const title_style = { font: '32px Chalkduster', fill: '#FFFFFF' };
+  const body_style = { font: '24px Chalkduster', fill: '#FFFFFF' };
+  const style = { font: '18px Chalkduster', fill: '#FFFFFF' };
+  const styleOver = { fill: '#FFFF77' };
+  const spacing = 10;
+
+  var background;
+  var display_text;
+  var display_text1;
+  var self_pic;
+
+  function doSomething() { openExternalLink ('https://twitter.com/intent/tweet'); }
+  function display(text) {  
+  }
+  let txt = [{ x: 10, y: 10, width: 0 }];
+
+  const list = [
+    { name: "Introduction", content: "My name is Justin...\nI am a student...\n\n*I made this page \n by macbook.\n So, display of font may\n get error on Windows OS." },
+    { name: "About me", content: "Birthday:10/30\nHobby:Online games\n       Workout" },
+    { name: "Education", content: "University:NCKU\nDepartment:EE\nGrade:Three" },
+    { name: "My Facebook", content: "" },
+    { name: "My Instagram", content: "" },
+    { name: "Contact me", content: "Email:li871030@gmail.com" },
+  ];
+  function openExternalLink (url)
+  {
+      var s = window.open(url, '_blank');
+  
+      if (s && s.focus)
+      {
+          s.focus();
+      }
+      else if (!s)
+      {
+          window.location.href = url;
+      }
+  }
+  function preload() {
+    this.load.image('self_pic', 'https://i.imgur.com/CoRg8tM.png');
+    this.load.image('background', 'https://2.bp.blogspot.com/-wkfnFKLBL5E/WcP8FolRkNI/AAAAAAABt3Q/6RJGWV7Mc-k3MPaZZOdRar6NRw_dpKwiwCLcBGAs/s1600/Blackboard2.png');
+  }
+  function create() {
+    // Loop through the list of links
+    background=this.add.image(0, 0, 'background').setOrigin(0).setScale(0.5);
+
+    display_text=this.add.text(400, 200, "", style);
+    display_text1=this.add.text(400, 200, "", style);
+    self_pic=this.add.image(75, 70, 'self_pic').setScale(0.25)
+    .setOrigin(0).setInteractive().setOrigin(0)
+    .setInteractive();
+    for (let i = 0; i < list.length; i++) {
+      txt.push(this.add.text(80, 350+30*(i), list[i].name, style)
+        .setOrigin(0)
+        .setInteractive()
+        .on('pointerover', function () {
+          this.setStyle(styleOver);
+        })
+        .on('pointerout', function () {
+          this.setStyle(style);
+        })
+        .on('pointerdown', function () {
+          display_text.destroy();
+          display_text1.destroy();
+          display_text=this.add.text(350, 70, list[i].name, title_style).setOrigin(0).setInteractive();
+          display_text1=this.add.text(360, 150, list[i].content, body_style).setOrigin(0).setInteractive();
+          if (list[i].name=="My Facebook")
+          {
+            openExternalLink ('https://www.facebook.com/li871030');
+          }
+          else if(list[i].name=="My Instagram")
+          {
+            openExternalLink ('https://www.instagram.com/_fong27');
+          }
+        }, this));
+    }
+
+  }
+</script>
+</html>

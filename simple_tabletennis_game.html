@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script type="text/javascript" src="https://github.com/photonstorm/phaser/releases/download/v3.19.0/phaser.min.js"></script>
+    <title>Game...</title>
+</head>
+<body>
+    <div id='game'></div>
+</body>
+<script type="text/javascript">
+var config = {
+    type: Phaser.AUTO,
+    width: 800,
+    height: 600,
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 0 },
+            debug: false
+        }
+    },
+    scene: {
+        preload: preload,
+        create: create,
+        update: update
+    }
+};
+
+var game = new Phaser.Game(config);
+var ball;
+var paddle;
+var cursors;
+var velocity_state = 1;
+var gameover = false;
+var guide_text;
+var discribe_text;
+var reset_text;
+var velocity_text;
+var reset_text;
+var gameover_text;
+var bomb_text;
+var time_start=false;
+var time_text;
+var time_count=0;
+var bombs=[];
+
+var num = 0;
+var bomb_num = 0;
+var bomb_time = 0;
+var bomb_count = 0;
+
+const style = { font: '18px Chalkduster', fill: '#FFFFFF' };
+const styleOver = { fill: '#FFFF77' };
+const velocity_level = ['easy','normal','hard'];
+const velocity_value = [100,200,300];
+
+function preload() {
+  this.load.spritesheet('back', 'https://i.imgur.com/guAMp5W.jpg' , { frameWidth: 1600, frameHeight: 1200 });
+  this.load.spritesheet('ball', 'https://i.imgur.com/5SVIaRJ.png' , { frameWidth: 600, frameHeight: 600 });
+  this.load.spritesheet('paddle', 'https://i.imgur.com/hFgXOs3.png' , { frameWidth: 1235, frameHeight:2149 });
+  this.load.spritesheet('bomb', 'https://i.imgur.com/jhbau4e.png' , { frameWidth: 2000, frameHeight:2000 });
+}
+function create() {
+  cursors = this.input.keyboard.createCursorKeys();
+  this.physics.add.sprite(0, 0, 'back').setOrigin(0).setScale(0.5);
+  ball = this.physics.add.sprite(0, 0, 'ball').setOrigin(0.5).setScale(0.05);
+  paddle = this.physics.add.sprite(0, 0, 'paddle').setOrigin(0.5).setScale(0.05);
+  for (let i = 0; i < 4; i++) {
+    bombs.push(this.physics.add.sprite(-100, -100, 'bomb').setOrigin(0.5).setScale(0.05).setVelocityY(300));
+  }
+  discribe_text=this.add.text(400, 330, "", { font: '18px Chalkduster', fill: '#CC0000' }).setOrigin(0.5)
+  time_text=this.add.text(200, 4, "time:"+time_count.toString(), style).setOrigin(0)
+  lose_text=this.add.text(400, 4, "Lose:"+num.toString(), style).setOrigin(0)
+  gameover_text=this.add.text(400, 300, "", { font: '50px Chalkduster', fill: '#FFFFFF' }).setOrigin(0.5)
+  guide_text=this.add.text(16, 4, "Description", style).setOrigin(0)
+        .setInteractive()
+        .on('pointerover', function () {
+          this.setStyle(styleOver);
+          discribe_text.setText("Tutorial:\n← → for move , ↑ for shoot , chick button to set .\n You will lose when the ball reach bottom or the paddle is hit by bombs .\n(You will have better user experience on Mac OS.)\n(Font may not display properly on Windows OS.)\n\n\n\n\n\n Introduction:\nFirst , several image will be loaded for use .\nThen , setup the initial position of the ball and paddle.\nSetup the their speeds when the play chick the button .\nAnd the level of speed and number of bombs \nis related to the value user choose .\nWhen the failure condition occur , \nstop the game and show Gameover on the screen .");
+        })
+        .on('pointerout', function () {
+          this.setStyle(style);
+          discribe_text.setText("");
+        });
+  velocity_text=this.add.text(600, 4, velocity_level[velocity_state], style).setOrigin(0)
+        .setInteractive()
+        .on('pointerover', function () {
+          this.setStyle(styleOver);
+        })
+        .on('pointerout', function () {
+          this.setStyle(style);
+        })
+        .on('pointerdown', function () {
+          velocity_state=(velocity_state+1)%3;
+          velocity_text.setText(velocity_level[velocity_state]);
+        }, this);
+  reset_text=this.add.text(700, 4, "Reset", style).setOrigin(0)
+        .setInteractive()
+        .on('pointerover', function () {
+          this.setStyle(styleOver);
+        })
+        .on('pointerout', function () {
+          this.setStyle(style);
+        })
+        .on('pointerdown', function () {
+          gameover=false;
+          gameover_text.setText("");
+          lose_text.setText("Lose:"+num.toString());
+          resetPaddleBall();
+        }, this);
+  bomb_text=this.add.text(500, 4, "Bomb:"+bomb_num.toString(), style).setOrigin(0)
+        .setInteractive()
+        .on('pointerover', function () {
+          this.setStyle(styleOver);
+        })
+        .on('pointerout', function () {
+          this.setStyle(style);
+        })
+        .on('pointerdown', function () {
+          bomb_num=(bomb_num+1)%5;
+          bomb_text.setText("Bomb:"+bomb_num.toString());
+        }, this);
+  
+  paddle.setCollideWorldBounds(true).body.immovable = true;;
+  ball.setCollideWorldBounds(true);
+  ball.setBounce(1);
+  this.physics.add.collider(paddle, ball, hit, null, this);
+  this.physics.add.collider(paddle, bombs, boom, null, this);
+
+  resetPaddleBall(); 
+}
+function update(time,delta) {
+
+  if(ball.y>=560&&!gameover){
+    gameover=true;
+    time_start = false ;
+    num++;
+    lose_text.setText("Lose:"+num.toString());
+  }
+  if(time_start){
+    time_count+=delta;
+    bomb_time+=delta;
+    time_text.setText("time:"+(Math.floor(time_count/100)/10).toString());
+    if(bomb_num){
+      if(Math.floor(bomb_time/1000) > 1/bomb_num ){
+        var choose = (bomb_count++)%4;
+        bombs[choose].x=100+getRandom(600);
+        bombs[choose].y=0;
+        bomb_time=0;
+      }
+    }
+  }
+  if(gameover){
+    ball.body.velocity.set(0);
+    paddle.body.velocity.set(0);
+    gameover_text.setText("Gameover");
+  }
+  else if (cursors.up.isDown){
+    shootBall();
+  }
+  else if (cursors.left.isDown){
+    paddle.setVelocityX(-300);
+  }
+	else if (cursors.right.isDown){
+    paddle.setVelocityX(300);
+	}
+  else{
+    paddle.setVelocityX(0);
+  }
+}
+
+function hit (paddle, ball){
+}
+
+function boom (paddle, ball){
+    gameover=true;
+    time_start = false ;
+    num++;
+    lose_text.setText("Lose:"+num.toString());
+}
+
+function loseLife() {
+    num++;
+}
+
+function getRandom(x){
+    return Math.floor(Math.random()*x);
+}
+
+function resetPaddleBall(){
+    paddle.x = 400 ;
+    paddle.y = 600 - paddle.height/2*0.05;
+    ball.x = paddle.x;
+    ball.y = paddle.y - paddle.height/2*0.05 - ball.height/2*0.05;
+    ball.body.velocity.set(0);
+    ball.isShot = false;
+    for (let i = 0; i < 4; i++) {
+      bombs[i].x= -100;
+      bombs[i].setVelocityX(0);
+      bombs[i].setVelocityY(300);
+    }
+    time_start = false ;
+    time_count=0;
+    time_text.setText("time:"+Math.floor(time_count).toString());
+}
+
+function shootBall(){
+    if (ball.isShot) {
+      return;
+    }
+    var r_l = 1;
+    var rand = Math.floor(Math.random()*2);
+    if (rand % 2) {
+      r_l *= -1;
+    }
+    ball.isShot = true;
+    ball.body.velocity.set(velocity_value[velocity_state]*r_l, -velocity_value[velocity_state]);
+    time_start = true ;
+}
+
+</script>
+</html>
